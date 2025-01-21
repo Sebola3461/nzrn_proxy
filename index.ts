@@ -14,15 +14,20 @@ app.use((req, res, next) => {
   );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (String(req.headers["x-secret-key"] || "") !== process.env.SECRET) {
+  if (
+    String(
+      req.headers["x-secret-key"] ||
+        req.headers.cookie?.split(";")[0].split("=")[1]
+    ) !== process.env.SECRET
+  ) {
     res.sendStatus(401);
   } else {
     if (req.method === "OPTIONS") {
       res.sendStatus(204);
+    } else {
+      next();
     }
   }
-
-  next();
 });
 
 app.all("*", async (req, res) => {
@@ -42,28 +47,17 @@ app.all("*", async (req, res) => {
 
     const targetURL = new URL(sanitizatedURL);
 
-    const requestHeaders = {
-      ...req.headers,
-      origin: targetURL.origin,
-      host: targetURL.host,
-      referer: targetURL.href,
-      "user-agent": "nzrn_proxy",
-    } as typeof req.headers & { "x-secret-key"?: string };
-
-    delete requestHeaders["x-secret-key"];
-
-    const fetchOptions = {
-      method: req.method,
-      headers: Object.entries({
-        ...req.headers,
-        origin: targetURL.origin,
-        host: targetURL.host,
-        referer: targetURL.href,
-        "user-agent": "nzrn_proxy",
-      }).reduce((acc, [key, value]) => {
-        if (value !== undefined) acc[key] = String(value);
+    // Transform headers into HeadersInit
+    const requestHeaders = Object.entries(req.headers)
+      .filter(([key]) => key !== "x-secret-key") // Exclude sensitive headers
+      .reduce((acc, [key, value]) => {
+        if (value) acc[key] = value.toString();
         return acc;
-      }, {} as Record<string, string>),
+      }, {} as Record<string, string>);
+
+    const fetchOptions: RequestInit = {
+      method: req.method,
+      headers: requestHeaders,
       ...(req.method !== "GET" &&
         req.method !== "HEAD" && { body: JSON.stringify(req.body) }),
     };
@@ -74,9 +68,12 @@ app.all("*", async (req, res) => {
       res.setHeader(key, value);
     });
 
-    const responseText = await response.text();
-    res.status(response.status).send(responseText);
+    res.removeHeader("content-encoding");
+
+    const buffer = await response.arrayBuffer();
+    res.status(response.status).send(Buffer.from(buffer));
   } catch (error: any) {
+    console.error("Error handling request:", error);
     res.status(400).send({ error: error.message || "Invalid URL" });
   }
 });
