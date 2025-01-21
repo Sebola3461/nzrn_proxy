@@ -1,4 +1,4 @@
-import express from "express";
+import express, { request } from "express";
 import { config } from "dotenv";
 config();
 const app = express();
@@ -55,6 +55,8 @@ app.all("*", async (req, res) => {
         return acc;
       }, {} as Record<string, string>);
 
+    delete requestHeaders["content-length"];
+
     const fetchOptions: RequestInit = {
       method: req.method,
       headers: requestHeaders,
@@ -69,10 +71,12 @@ app.all("*", async (req, res) => {
             res.setHeader(key, value);
           });
 
+          res.removeHeader("content-length");
           res.removeHeader("content-encoding");
+          res.removeHeader("transfer-encoding");
 
-          const buffer = await response.arrayBuffer();
-          res.status(response.status).send(Buffer.from(buffer));
+          const plain = await response.text();
+          res.status(response.status).send(plain);
         } catch (e) {
           console.error(e);
 
