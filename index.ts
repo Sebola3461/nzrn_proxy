@@ -39,10 +39,8 @@ app.all("*", async (req, res) => {
       !sanitizatedURL.startsWith("http://")
     ) {
       const referer = req.headers.referer || "";
-      if (!referer)
-        throw new Error("Missing referer header for relative URL resolution");
 
-      sanitizatedURL = new URL(req.path, referer).href;
+      sanitizatedURL = new URL(req.path, referer || "").href;
     }
 
     const targetURL = new URL(sanitizatedURL);
