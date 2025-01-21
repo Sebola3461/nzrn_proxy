@@ -3,6 +3,21 @@ const app = express();
 
 app.use(express.json());
 
+// Disable CORS
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+  } else {
+    next();
+  }
+});
 app.all("*", (req, res) => {
   try {
     const targetURL = new URL(req.path.slice(1));
@@ -13,23 +28,31 @@ app.all("*", (req, res) => {
     req.headers.referer = targetURL.href;
     req.headers["content-length"] = String(JSON.stringify(req.body).length);
 
-    fetch(targetURL.href, {
-      headers: req.headers as any,
-      method: req.method,
-      body: JSON.stringify(req.body),
-    })
+    let reqContent: RequestInit;
+
+    if (req.method == "GET" || req.method == "HEAD") {
+      reqContent = {
+        headers: req.headers as any,
+        method: req.method,
+      };
+    } else {
+      reqContent = {
+        headers: req.headers as any,
+        method: req.method,
+        body: JSON.stringify(req.body),
+      };
+    }
+
+    fetch(targetURL.href, reqContent)
       .then(async (axios_res) => {
         try {
-          // Set headers received from the axios response
           if (axios_res.headers) {
             Object.entries(axios_res.headers).forEach(([key, value]) => {
               if (value) {
-                res.set(key, value as string); // Set headers one by one
+                res.set(key, value as string);
               }
             });
           }
-
-          // Forward the status and data
 
           res.status(axios_res.status || 200).send(await axios_res.text());
         } catch (e) {
@@ -42,7 +65,6 @@ app.all("*", (req, res) => {
       });
   } catch (e) {
     console.log(e);
-
     res.status(400).send("Invalid URL");
   }
 });
