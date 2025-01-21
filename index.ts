@@ -5,15 +5,7 @@ app.use(express.json());
 
 app.all("*", (req, res) => {
   try {
-    let requestedURL = req.path.slice(1);
-    if (
-      !requestedURL.startsWith("http://") ||
-      !requestedURL.startsWith("https://")
-    ) {
-      requestedURL = req.protocol + "://" + requestedURL;
-    }
-
-    const targetURL = new URL(requestedURL);
+    const targetURL = new URL(req.path.slice(1));
 
     req.headers.origin = targetURL.origin;
     req.headers.host = targetURL.host;
