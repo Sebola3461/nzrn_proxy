@@ -1,4 +1,6 @@
 import express from "express";
+import { config } from "dotenv";
+config();
 const app = express();
 
 app.use(express.json());
@@ -12,10 +14,14 @@ app.use((req, res, next) => {
   );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (req.method === "OPTIONS") {
-    res.sendStatus(204);
+  if (req.headers["x-secret-key"] != process.env.SECRET) {
+    res.send(401);
   } else {
-    next();
+    if (req.method === "OPTIONS") {
+      res.sendStatus(204);
+    } else {
+      next();
+    }
   }
 });
 app.all("*", (req, res) => {
