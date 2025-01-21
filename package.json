@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@types/axios": "^0.14.4",
+    "@types/express": "^5.0.0",
+    "axios": "^1.7.9",
+    "express": "^4.21.2"
+  }
+}
