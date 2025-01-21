@@ -14,67 +14,74 @@ app.use((req, res, next) => {
   );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (req.headers["x-secret-key"] != process.env.SECRET) {
-    res.send(401);
+  if (String(req.headers["x-secret-key"] || "") !== process.env.SECRET) {
+    res.sendStatus(401);
   } else {
     if (req.method === "OPTIONS") {
       res.sendStatus(204);
-    } else {
-      next();
     }
   }
+
+  next();
 });
-app.all("*", (req, res) => {
+
+app.all("*", async (req, res) => {
   try {
-    const targetURL = new URL(req.path.slice(1));
+    let sanitizatedURL = req.path.slice(1);
 
-    req.headers.origin = targetURL.origin;
-    req.headers.host = targetURL.host;
-    req.headers["user-agent"] = "nzrn_proxy";
-    req.headers.referer = targetURL.href;
-    req.headers["content-length"] = String(JSON.stringify(req.body).length);
+    if (
+      !sanitizatedURL.startsWith("https://") &&
+      !sanitizatedURL.startsWith("http://")
+    ) {
+      const referer = req.headers.referer || "";
+      if (!referer)
+        throw new Error("Missing referer header for relative URL resolution");
 
-    let reqContent: RequestInit;
-
-    if (req.method == "GET" || req.method == "HEAD") {
-      reqContent = {
-        headers: req.headers as any,
-        method: req.method,
-      };
-    } else {
-      reqContent = {
-        headers: req.headers as any,
-        method: req.method,
-        body: JSON.stringify(req.body),
-      };
+      sanitizatedURL = new URL(req.path, referer).href;
     }
 
-    fetch(targetURL.href, reqContent)
-      .then(async (axios_res) => {
-        try {
-          if (axios_res.headers) {
-            Object.entries(axios_res.headers).forEach(([key, value]) => {
-              if (value) {
-                res.set(key, value as string);
-              }
-            });
-          }
+    const targetURL = new URL(sanitizatedURL);
 
-          res.status(axios_res.status || 200).send(await axios_res.text());
-        } catch (e) {
-          res.status(500).send("");
-        }
-      })
-      .catch((e) => {
-        console.log(e);
-        res.status(e?.response?.status || 500).send(e?.response?.data);
-      });
-  } catch (e) {
-    console.log(e);
-    res.status(400).send("Invalid URL");
+    const requestHeaders = {
+      ...req.headers,
+      origin: targetURL.origin,
+      host: targetURL.host,
+      referer: targetURL.href,
+      "user-agent": "nzrn_proxy",
+    } as typeof req.headers & { "x-secret-key"?: string };
+
+    delete requestHeaders["x-secret-key"];
+
+    const fetchOptions = {
+      method: req.method,
+      headers: Object.entries({
+        ...req.headers,
+        origin: targetURL.origin,
+        host: targetURL.host,
+        referer: targetURL.href,
+        "user-agent": "nzrn_proxy",
+      }).reduce((acc, [key, value]) => {
+        if (value !== undefined) acc[key] = String(value);
+        return acc;
+      }, {} as Record<string, string>),
+      ...(req.method !== "GET" &&
+        req.method !== "HEAD" && { body: JSON.stringify(req.body) }),
+    };
+
+    const response = await fetch(targetURL.href, fetchOptions);
+
+    response.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
+
+    const responseText = await response.text();
+    res.status(response.status).send(responseText);
+  } catch (error: any) {
+    res.status(400).send({ error: error.message || "Invalid URL" });
   }
 });
 
-app.listen(31069, () => {
-  console.log("Proxy server listening on port 31069");
+const PORT = process.env.PORT || 31069;
+app.listen(PORT, () => {
+  console.log(`Proxy server listening on port ${PORT}`);
 });
