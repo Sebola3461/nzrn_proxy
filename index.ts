@@ -1,6 +1,7 @@
-import axios from "axios";
 import express from "express";
 const app = express();
+
+app.use(express.json());
 
 app.all("*", (req, res) => {
   try {
@@ -10,29 +11,34 @@ app.all("*", (req, res) => {
     req.headers.host = targetURL.host;
     req.headers["user-agent"] = "nzrn_proxy";
     req.headers.referer = targetURL.href;
+    req.headers["content-length"] = String(JSON.stringify(req.body).length);
 
-    axios(targetURL.href, {
-      headers: req.headers,
+    fetch(targetURL.href, {
+      headers: req.headers as any,
       method: req.method,
-      data: req.body,
+      body: JSON.stringify(req.body),
     })
-      .then((axios_res) => {
-        // Set headers received from the axios response
-        if (axios_res.headers) {
-          Object.entries(axios_res.headers).forEach(([key, value]) => {
-            if (value) {
-              res.set(key, value as string); // Set headers one by one
-            }
-          });
-        }
+      .then(async (axios_res) => {
+        try {
+          // Set headers received from the axios response
+          if (axios_res.headers) {
+            Object.entries(axios_res.headers).forEach(([key, value]) => {
+              if (value) {
+                res.set(key, value as string); // Set headers one by one
+              }
+            });
+          }
 
-        // Forward the status and data
-        res.status(axios_res.status || 200).send(axios_res.data);
+          // Forward the status and data
+
+          res.status(axios_res.status || 200).send(await axios_res.text());
+        } catch (e) {
+          res.status(500).send("");
+        }
       })
       .catch((e) => {
-        res
-          .status(e?.status || 500)
-          .send(e?.response?.data || "Error occurred");
+        console.log(e);
+        res.status(e?.response?.status || 500).send(e?.response?.data);
       });
   } catch (e) {
     console.log(e);
