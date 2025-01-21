@@ -4,14 +4,7 @@ const app = express();
 
 app.all("*", (req, res) => {
   try {
-    const targetURL = new URL(
-      "https://" +
-        req.path
-          .slice(7)
-          .split("/")
-          .filter((el, i) => i != 0)
-          .join("/")
-    );
+    const targetURL = new URL(req.path.slice(1));
 
     req.headers.origin = targetURL.origin;
     req.headers.host = targetURL.host;
