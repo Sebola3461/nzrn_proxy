@@ -62,16 +62,28 @@ app.all("*", async (req, res) => {
         req.method !== "HEAD" && { body: JSON.stringify(req.body) }),
     };
 
-    const response = await fetch(targetURL.href, fetchOptions);
+    fetch(targetURL.href, fetchOptions)
+      .then(async (response) => {
+        try {
+          response.headers.forEach((value, key) => {
+            res.setHeader(key, value);
+          });
 
-    response.headers.forEach((value, key) => {
-      res.setHeader(key, value);
-    });
+          res.removeHeader("content-encoding");
 
-    res.removeHeader("content-encoding");
+          const buffer = await response.arrayBuffer();
+          res.status(response.status).send(Buffer.from(buffer));
+        } catch (e) {
+          console.error(e);
 
-    const buffer = await response.arrayBuffer();
-    res.status(response.status).send(Buffer.from(buffer));
+          res.status(500).send(e);
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+
+        res.status(500).send(e);
+      });
   } catch (error: any) {
     console.error("Error handling request:", error);
     res.status(400).send({ error: error.message || "Invalid URL" });
