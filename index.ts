@@ -72,6 +72,7 @@ app.all("*", async (req, res) => {
           res.removeHeader("content-length");
           res.removeHeader("content-encoding");
           res.removeHeader("transfer-encoding");
+          res.setHeader("origin", req.originalUrl);
 
           const plain = await response.text();
           res.status(response.status).send(plain);
