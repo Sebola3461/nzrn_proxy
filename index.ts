@@ -13,7 +13,7 @@ app.use((req, res, next) => {
     "GET, POST, PUT, DELETE, OPTIONS"
   );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("origin", req.originalUrl);
+  res.setHeader("Origin", req.originalUrl);
 
   if (
     String(
