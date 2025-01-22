@@ -18,24 +18,26 @@ app.use((req, res, next) => {
   );
   res.setHeader("Origin", req.originalUrl);
 
-  if (
-    String(
-      req.headers["x-secret-key"] ||
-        req.headers.cookie?.split(";")[0].split("=")[1]
-    ) !== process.env.SECRET
-  ) {
-    res.sendStatus(401);
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
   } else {
-    if (req.method === "OPTIONS") {
-      res.sendStatus(204);
-    } else {
-      next();
-    }
+    next();
   }
 });
 
 app.all("*", async (req, res) => {
   try {
+    if (
+      String(
+        req.headers["x-secret-key"] ||
+          req.headers.cookie?.split(";")[0].split("=")[1]
+      ) !== process.env.SECRET
+    ) {
+      res.sendStatus(401);
+
+      return;
+    }
+
     let sanitizatedURL = req.path.slice(1);
 
     if (
