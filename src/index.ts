@@ -2,12 +2,16 @@ import express from "express";
 import cors from "cors";
 import { createProxyMiddleware, fixRequestBody } from "http-proxy-middleware";
 import bodyParser from "body-parser";
+import { config } from "dotenv";
+import cookieParser from "cookie-parser"; // Adicionado cookie-parser
 
 const app = express();
+config();
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.use((req, res, next) => {
   try {
@@ -25,10 +29,47 @@ app.use((req, res, next) => {
           .send(
             "URL inválida. Deve começar com http:// ou https:// ou incluir um Origin válido."
           );
+
         return;
       }
 
       targetUrl = `${origin}/${targetUrl}`;
+    }
+
+    if (req.method != "OPTIONS") {
+      const authCookie = req.cookies["proxy-authentication"];
+
+      if (req.headers["proxy-authorization"] && !authCookie) {
+        if (req.headers["proxy-authorization"] != process.env.SECRET) {
+          res.status(403).send("Forbbiden");
+
+          return;
+        }
+      }
+
+      if (!req.headers["proxy-authorization"] && authCookie) {
+        if (authCookie != process.env.SECRET) {
+          res.status(403).send("Forbbiden");
+
+          return;
+        }
+      }
+
+      if (req.headers["proxy-authorization"] && authCookie) {
+        if (req.headers["proxy-authorization"] != process.env.SECRET) {
+          res.status(403).send("Forbbiden");
+
+          return;
+        }
+      }
+
+      if (!req.headers["proxy-authorization"] && authCookie) {
+        if (authCookie != process.env.SECRET) {
+          res.status(403).send("Forbbiden");
+
+          return;
+        }
+      }
     }
 
     const proxyMiddleware = createProxyMiddleware({
