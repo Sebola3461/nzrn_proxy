@@ -38,47 +38,47 @@ app.use((req, res, next) => {
       targetUrl = `${origin}/${targetUrl}`;
     }
 
-    if (req.method != "OPTIONS") {
-      const authCookie = req.cookies["proxy-authentication"];
+    // if (req.method != "OPTIONS") {
+    //   const authCookie = req.cookies["proxy-authentication"];
 
-      if (!req.headers["proxy-authorization"] && !authCookie) {
-        res.status(403).send("Forbbiden");
+    //   if (!req.headers["proxy-authorization"] && !authCookie) {
+    //     res.status(403).send("Forbbiden");
 
-        return;
-      }
+    //     return;
+    //   }
 
-      if (req.headers["proxy-authorization"] && !authCookie) {
-        if (req.headers["proxy-authorization"] != process.env.SECRET) {
-          res.status(403).send("Forbbiden");
+    //   if (req.headers["proxy-authorization"] && !authCookie) {
+    //     if (req.headers["proxy-authorization"] != process.env.SECRET) {
+    //       res.status(403).send("Forbbiden");
 
-          return;
-        }
-      }
+    //       return;
+    //     }
+    //   }
 
-      if (!req.headers["proxy-authorization"] && authCookie) {
-        if (authCookie != process.env.SECRET) {
-          res.status(403).send("Forbbiden");
+    //   if (!req.headers["proxy-authorization"] && authCookie) {
+    //     if (authCookie != process.env.SECRET) {
+    //       res.status(403).send("Forbbiden");
 
-          return;
-        }
-      }
+    //       return;
+    //     }
+    //   }
 
-      if (req.headers["proxy-authorization"] && authCookie) {
-        if (req.headers["proxy-authorization"] != process.env.SECRET) {
-          res.status(403).send("Forbbiden");
+    //   if (req.headers["proxy-authorization"] && authCookie) {
+    //     if (req.headers["proxy-authorization"] != process.env.SECRET) {
+    //       res.status(403).send("Forbbiden");
 
-          return;
-        }
+    //       return;
+    //     }
 
-        if (!req.headers["proxy-authorization"] && authCookie) {
-          if (authCookie != process.env.SECRET) {
-            res.status(403).send("Forbbiden");
+    //     if (!req.headers["proxy-authorization"] && authCookie) {
+    //       if (authCookie != process.env.SECRET) {
+    //         res.status(403).send("Forbbiden");
 
-            return;
-          }
-        }
-      }
-    }
+    //         return;
+    //       }
+    //     }
+    //   }
+    // }
 
     const proxyMiddleware = createProxyMiddleware({
       target: targetUrl,
