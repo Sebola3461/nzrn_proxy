@@ -8,12 +8,12 @@ import cookieParser from "cookie-parser";
 const app = express();
 config();
 
-// Configuração do CORS para permitir qualquer origem
+// Configuração do CORS para permitir qualquer origem e todos os cabeçalhos
 app.use(
   cors({
     origin: "*", // Permite qualquer origem
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Métodos permitidos
-    allowedHeaders: ["Content-Type", "Authorization", "Proxy-Authorization"], // Cabeçalhos permitidos
+    allowedHeaders: "*", // Permite todos os cabeçalhos
     credentials: true, // Permite credenciais (cookies, headers de autenticação)
   })
 );
@@ -26,7 +26,7 @@ app.use(cookieParser());
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "*");
+  res.header("Access-Control-Allow-Headers", "*"); // Permite todos os cabeçalhos
   res.sendStatus(204); // Resposta sem conteúdo para preflight requests
 });
 
@@ -34,8 +34,7 @@ app.use((req, res, next) => {
   try {
     let targetUrl = req.path.slice(1);
 
-    req.headers.origin = req.path.slice(1);
-
+    // Verifica se a URL começa com http:// ou https://
     if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
       const origin = req.headers.origin;
 
@@ -48,13 +47,13 @@ app.use((req, res, next) => {
           .send(
             "URL inválida. Deve começar com http:// ou https:// ou incluir um Origin válido."
           );
-
         return;
       }
 
       targetUrl = `${origin}/${targetUrl}`;
     }
 
+    // Configuração do proxy
     const proxyMiddleware = createProxyMiddleware({
       target: targetUrl,
       changeOrigin: true,
