@@ -17,6 +17,8 @@ app.use((req, res, next) => {
   try {
     let targetUrl = req.path.slice(1);
 
+    req.headers.origin = req.path.slice(1);
+
     if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
       const origin = req.headers.origin;
 
