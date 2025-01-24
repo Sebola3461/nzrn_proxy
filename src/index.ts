@@ -23,7 +23,15 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Middleware para lidar com preflight requests (OPTIONS)
-app.options("*", cors()); // Responde a todas as requisições OPTIONS com os cabeçalhos CORS
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, Proxy-Authorization"
+  );
+  res.sendStatus(204); // Resposta sem conteúdo para preflight requests
+});
 
 app.use((req, res, next) => {
   try {
