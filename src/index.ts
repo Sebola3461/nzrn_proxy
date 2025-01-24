@@ -26,10 +26,7 @@ app.use(cookieParser());
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, Proxy-Authorization"
-  );
+  res.header("Access-Control-Allow-Headers", "*");
   res.sendStatus(204); // Resposta sem conteúdo para preflight requests
 });
 
