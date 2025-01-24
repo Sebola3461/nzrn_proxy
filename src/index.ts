@@ -39,6 +39,12 @@ app.use((req, res, next) => {
     if (req.method != "OPTIONS") {
       const authCookie = req.cookies["proxy-authentication"];
 
+      if (!req.headers["proxy-authorization"] && !authCookie) {
+        res.status(403).send("Forbbiden");
+
+        return;
+      }
+
       if (req.headers["proxy-authorization"] && !authCookie) {
         if (req.headers["proxy-authorization"] != process.env.SECRET) {
           res.status(403).send("Forbbiden");
@@ -61,13 +67,13 @@ app.use((req, res, next) => {
 
           return;
         }
-      }
 
-      if (!req.headers["proxy-authorization"] && authCookie) {
-        if (authCookie != process.env.SECRET) {
-          res.status(403).send("Forbbiden");
+        if (!req.headers["proxy-authorization"] && authCookie) {
+          if (authCookie != process.env.SECRET) {
+            res.status(403).send("Forbbiden");
 
-          return;
+            return;
+          }
         }
       }
     }
