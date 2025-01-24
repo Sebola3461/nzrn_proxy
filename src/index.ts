@@ -3,15 +3,27 @@ import cors from "cors";
 import { createProxyMiddleware, fixRequestBody } from "http-proxy-middleware";
 import bodyParser from "body-parser";
 import { config } from "dotenv";
-import cookieParser from "cookie-parser"; // Adicionado cookie-parser
+import cookieParser from "cookie-parser";
 
 const app = express();
 config();
 
-app.use(cors());
+// Configuração do CORS para permitir qualquer origem
+app.use(
+  cors({
+    origin: "*", // Permite qualquer origem
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Métodos permitidos
+    allowedHeaders: ["Content-Type", "Authorization", "Proxy-Authorization"], // Cabeçalhos permitidos
+    credentials: true, // Permite credenciais (cookies, headers de autenticação)
+  })
+);
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Middleware para lidar com preflight requests (OPTIONS)
+app.options("*", cors()); // Responde a todas as requisições OPTIONS com os cabeçalhos CORS
 
 app.use((req, res, next) => {
   try {
@@ -37,48 +49,6 @@ app.use((req, res, next) => {
 
       targetUrl = `${origin}/${targetUrl}`;
     }
-
-    // if (req.method != "OPTIONS") {
-    //   const authCookie = req.cookies["proxy-authentication"];
-
-    //   if (!req.headers["proxy-authorization"] && !authCookie) {
-    //     res.status(403).send("Forbbiden");
-
-    //     return;
-    //   }
-
-    //   if (req.headers["proxy-authorization"] && !authCookie) {
-    //     if (req.headers["proxy-authorization"] != process.env.SECRET) {
-    //       res.status(403).send("Forbbiden");
-
-    //       return;
-    //     }
-    //   }
-
-    //   if (!req.headers["proxy-authorization"] && authCookie) {
-    //     if (authCookie != process.env.SECRET) {
-    //       res.status(403).send("Forbbiden");
-
-    //       return;
-    //     }
-    //   }
-
-    //   if (req.headers["proxy-authorization"] && authCookie) {
-    //     if (req.headers["proxy-authorization"] != process.env.SECRET) {
-    //       res.status(403).send("Forbbiden");
-
-    //       return;
-    //     }
-
-    //     if (!req.headers["proxy-authorization"] && authCookie) {
-    //       if (authCookie != process.env.SECRET) {
-    //         res.status(403).send("Forbbiden");
-
-    //         return;
-    //       }
-    //     }
-    //   }
-    // }
 
     const proxyMiddleware = createProxyMiddleware({
       target: targetUrl,
